@@ -4,8 +4,6 @@
 import { dotnet, exit } from './dotnet.js'
 
 const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
-
-
 try {
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
@@ -18,6 +16,9 @@ try {
     console.log("smoke: running TestCanStartThread");
     await exports.Sample.Test.TestCanStartThread();
     console.log("smoke: TestCanStartThread done");
+
+    console.log("smoke: running TestCanAllocAndReturnLargeMemory");;
+    console.log(await exports.Sample.Test.TestCanAllocAndReturnLargeMemory());
 
     console.log ("smoke: running TestCallSetTimeoutOnWorker");
     await exports.Sample.Test.TestCallSetTimeoutOnWorker();

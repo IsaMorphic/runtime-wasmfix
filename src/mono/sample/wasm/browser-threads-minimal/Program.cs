@@ -7,6 +7,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Sample
 {
@@ -16,6 +17,53 @@ namespace Sample
         {
             Console.WriteLine("Hello, World!");
             return 0;
+        }
+
+        [JSExport]
+        public static Task<int> TestCanAllocAndReturnLargeMemory()
+        {
+            return Task.Run(async () => 
+            {
+                var tasks = new List<Task<byte[]>>(); 
+
+                for(int i = 0; i < 3; i++)
+                {
+                    tasks.Add(Task.Run(async () => 
+                    {
+                        // Task.Delays and Task.Yields used to pretend like we have something better to do, mainly to make the timing random of when the tasks are allocating stuff.
+                        await Task.Delay(100);
+                        await Task.Delay(100);
+                        await Task.Delay(100);
+                        await Task.Delay(100);
+
+                        var largeMemory = new byte[1024];
+                        for(int i = 0; i < largeMemory.Length; i++)
+                        {
+                            if(i % 256 == 0) await Task.Yield();
+                            largeMemory[i] = (byte)(i % 256);
+                            await Task.Delay(10);
+                        }
+                        
+                        await Task.Yield();
+                        await Task.Yield();
+                        await Task.Yield();
+                        await Task.Yield();
+
+                        using var import = await JSHost.ImportAsync(bufferhelper, "./bufferhelper.js");
+                        GlobalGotBackBuffer(largeMemory);
+
+                        return largeMemory;
+                    }));
+                }
+
+                var allBytes = new List<byte>();
+                foreach(var buffer in await Task.WhenAll(tasks)) 
+                {
+                    allBytes.AddRange(buffer);
+                }
+                
+                return allBytes.Select(x => (int)x).Sum();
+            });
         }
 
         [JSExport]
@@ -39,6 +87,12 @@ namespace Sample
 
         [JSImport("globalThis.fetch")]
         private static partial Task<JSObject> GlobalThisFetch(string url);
+
+
+        const string bufferhelper = "./bufferhelper.js";
+
+        [JSImport("gotBackBuffer", bufferhelper)]
+        private static partial void GlobalGotBackBuffer([JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
         [JSExport]
         public static async Task TestCallSetTimeoutOnWorker()

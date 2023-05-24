@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmEnableThreads>true</WasmEnableThreads>
+    <WasmEnableThreads>True</WasmEnableThreads>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="embeds.html" />
     <WasmExtraFilesToDeploy Include="fetchhelper.js" />
+    <WasmExtraFilesToDeploy Include="bufferhelper.js" />
     <WasmExtraFilesToDeploy Include="blurst.txt" />
   </ItemGroup>
 
